@@ -485,8 +485,6 @@ where
 
         // Authenticate admin user.
         let (transaction_mode, mut server_parameters) = if admin {
-
-
             // Perform MD5 authentication.
             // TODO: Add SASL support.
             let salt = md5_challenge(&mut write).await?;
@@ -530,7 +528,6 @@ where
                     ))
                 }
             };
-
 
             let config = get_config();
 
@@ -622,7 +619,6 @@ where
                 };
 
                 let password_hash = if let Some(password) = &pool.settings.user.password {
-
                     Some(md5_hash_password(username, password, &salt))
                 } else {
                     if !get_config().is_auth_query_configured() {
