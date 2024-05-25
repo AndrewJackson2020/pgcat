@@ -208,6 +208,7 @@ impl Address {
 pub struct User {
     pub username: String,
     pub password: Option<String>,
+    pub auth_type: String,
     pub server_username: Option<String>,
     pub server_password: Option<String>,
     pub pool_size: u32,
@@ -225,6 +226,7 @@ impl Default for User {
         User {
             username: String::from("postgres"),
             password: None,
+            auth_type: "md5".to_string(),
             server_username: None,
             server_password: None,
             pool_size: 15,
