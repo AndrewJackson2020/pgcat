@@ -463,8 +463,8 @@ where
             .count()
             == 1;
 
-        // Kick any client that's not admin while we're in admin-only mode.
         if !admin && admin_only {
+        // Kick any client that's not admin while we're in admin-only mode.
             debug!(
                 "Rejecting non-admin connection to {} when in admin only mode",
                 pool_name
@@ -485,68 +485,69 @@ where
 
         // Authenticate admin user.
         let (transaction_mode, mut server_parameters) = if admin {
-            // Perform MD5 authentication.
-            // TODO: Add SASL support.
-            let salt = md5_challenge(&mut write).await?;
-
-            let code = match read.read_u8().await {
-                Ok(p) => p,
-                Err(_) => {
-                    return Err(Error::ClientSocketError(
-                        "password code".into(),
-                        client_identifier,
-                    ))
-                }
-            };
-
-            // PasswordMessage
-            if code as char != 'p' {
-                return Err(Error::ProtocolSyncError(format!(
-                    "Expected p, got {}",
-                    code as char
-                )));
-            }
-
-            let len = match read.read_i32().await {
-                Ok(len) => len,
-                Err(_) => {
-                    return Err(Error::ClientSocketError(
-                        "password message length".into(),
-                        client_identifier,
-                    ))
-                }
-            };
-
-            let mut password_response = vec![0u8; (len - 4) as usize];
-
-            match read.read_exact(&mut password_response).await {
-                Ok(_) => (),
-                Err(_) => {
-                    return Err(Error::ClientSocketError(
-                        "password message".into(),
-                        client_identifier,
-                    ))
-                }
-            };
-
             let config = get_config();
+            // TODO: Add SASL support.
+            // Perform MD5 authentication.
+            if let "md5" = config.general.admin_auth_type.as_str() {
+                let salt = md5_challenge(&mut write).await?;
 
-            // Compare server and client hashes.
-            let password_hash = md5_hash_password(
-                &config.general.admin_username,
-                &config.general.admin_password,
-                &salt,
-            );
+                let code = match read.read_u8().await {
+                    Ok(p) => p,
+                    Err(_) => {
+                        return Err(Error::ClientSocketError(
+                            "password code".into(),
+                            client_identifier,
+                        ))
+                    }
+                };
 
-            if password_hash != password_response {
-                let error = Error::ClientGeneralError("Invalid password".into(), client_identifier);
+                // PasswordMessage
+                if code as char != 'p' {
+                    return Err(Error::ProtocolSyncError(format!(
+                        "Expected p, got {}",
+                        code as char
+                    )));
+                }
 
-                warn!("{}", error);
-                wrong_password(&mut write, username).await?;
+                let len = match read.read_i32().await {
+                    Ok(len) => len,
+                    Err(_) => {
+                        return Err(Error::ClientSocketError(
+                            "password message length".into(),
+                            client_identifier,
+                        ))
+                    }
+                };
 
-                return Err(error);
+                let mut password_response = vec![0u8; (len - 4) as usize];
+
+                match read.read_exact(&mut password_response).await {
+                    Ok(_) => (),
+                    Err(_) => {
+                        return Err(Error::ClientSocketError(
+                            "password message".into(),
+                            client_identifier,
+                        ))
+                    }
+                };
+
+
+                // Compare server and client hashes.
+                let password_hash = md5_hash_password(
+                    &config.general.admin_username,
+                    &config.general.admin_password,
+                    &salt,
+                );
+
+                if password_hash != password_response {
+                    let error = Error::ClientGeneralError("Invalid password".into(), client_identifier);
+
+                    warn!("{}", error);
+                    wrong_password(&mut write, username).await?;
+
+                    return Err(error);
+                }
             }
-
             (false, generate_server_parameters_for_admin())
         }
         // Authenticate normal user.

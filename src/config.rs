@@ -335,6 +335,7 @@ pub struct General {
 
     pub admin_username: String,
     pub admin_password: String,
+    pub admin_auth_type: String,
 
     #[serde(default = "General::default_validate_config")]
     pub validate_config: bool,
@@ -458,6 +459,7 @@ impl Default for General {
             verify_server_certificate: false,
             admin_username: String::from("admin"),
             admin_password: String::from("admin"),
+            admin_auth_type: String::from("md5"),
             validate_config: true,
             auth_query: None,
             auth_query_user: None,
