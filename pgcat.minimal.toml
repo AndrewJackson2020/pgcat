@@ -7,6 +7,7 @@ host = "0.0.0.0"
 port = 6433
 admin_username = "pgcat"
 admin_password = "pgcat"
+admin_auth_type = "md5"
 
 [pools.pgml.users.0]
 username = "postgres"
