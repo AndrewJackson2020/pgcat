@@ -76,6 +76,7 @@ verify_server_certificate = false
 admin_username = "admin_user"
 # Password to access the virtual administrative database
 admin_password = "admin_pass"
+admin_auth_type = "md5"
 
 # Default plugins that are configured on all pools.
 [plugins]
