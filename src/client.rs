@@ -464,7 +464,7 @@ where
             == 1;
 
         if !admin && admin_only {
-        // Kick any client that's not admin while we're in admin-only mode.
+            // Kick any client that's not admin while we're in admin-only mode.
             debug!(
                 "Rejecting non-admin connection to {} when in admin only mode",
                 pool_name
@@ -531,7 +531,6 @@ where
                     }
                 };
 
-
                 // Compare server and client hashes.
                 let password_hash = md5_hash_password(
                     &config.general.admin_username,
@@ -540,7 +539,8 @@ where
                 );
 
                 if password_hash != password_response {
-                    let error = Error::ClientGeneralError("Invalid password".into(), client_identifier);
+                    let error =
+                        Error::ClientGeneralError("Invalid password".into(), client_identifier);
 
                     warn!("{}", error);
                     wrong_password(&mut write, username).await?;
