@@ -416,20 +416,20 @@ pub async fn startup_tls(
 
 
 // Pass in username and password to authenticate against LDAP
-async fn authenticate_ldap(username: &str, password: &str) -> bool {
+async fn authenticate_ldap(username: &str, password: &str, ldapurl: &str, ldapsuffix: &str) -> bool {
     // Connection to the LDAP Server
     let ldap_conn_settings = LdapConnSettings::new();
     let (conn, mut ldap) =
         LdapConnAsync::with_settings(
-            ldap_conn_settings, "ldap://127.0.0.1:3893").await.unwrap();
+            ldap_conn_settings, ldapurl).await.unwrap();
     ldap3::drive!(conn);
 
     // Takes the username provided and converts it into an email for validation
     // This is required because LDAP uses either the Distinguished name or Email in order to bind. Username alone will not work :/
-    let email = format!("{}@example.com", username);
+    let email = format!("{}{}", username, ldapsuffix);
 
     // Attempts a simple bind using the passed in values of username and Password
-    println!("{}", password);
+    println!("{:?}", password);
     let result = ldap.simple_bind(email.as_str(), &password).await.unwrap().success();
     ldap.unbind().await.unwrap();
 
@@ -617,15 +617,14 @@ where
                         ))
                     }
                 };
-                let str_password = std::str::from_utf8(&password_response).unwrap();
+                let str_password = String::from_utf8(password_response).unwrap();
+                let str_password = str_password.trim_matches(char::from(0));
                 let unsuccessful_auth = !authenticate_ldap(
                     &config.general.admin_username,
-                    str_password,
-                    // "dogood",
-                    // config.general.admin_auth_ldapurl.expect("ldapurl not set").as_str(),
-                    // config.general.admin_auth_ldapsuffix.expect("ldapsuffix not set").as_str(),
+                    &str_password,
+                    &config.general.admin_auth_ldapurl.unwrap(),
+                    &config.general.admin_auth_ldapsuffix.unwrap(),
                 ).await;
-                println!("{}", unsuccessful_auth);
                 if unsuccessful_auth {
                         wrong_password(&mut write, username).await?;
 
@@ -794,6 +793,62 @@ where
             }
 
             else if let "ldap" =  pool.settings.user.auth_type.as_str() {
+                clear_text_challenge(&mut write).await?;
+                let code = match read.read_u8().await {
+                    Ok(p) => p,
+                    Err(_) => {
+                        return Err(Error::ClientSocketError(
+                            "password code".into(),
+                            client_identifier,
+                        ))
+                    }
+                };
+
+                // PasswordMessage
+                if code as char != 'p' {
+                    return Err(Error::ProtocolSyncError(format!(
+                        "Expected p, got {}",
+                        code as char
+                    )));
+                }
+
+                let len = match read.read_i32().await {
+                    Ok(len) => len,
+                    Err(_) => {
+                        return Err(Error::ClientSocketError(
+                            "password message length".into(),
+                            client_identifier,
+                        ))
+                    }
+                };
+
+                let mut password_response = vec![0u8; (len - 4) as usize];
+
+                match read.read_exact(&mut password_response).await {
+                    Ok(_) => (),
+                    Err(_) => {
+                        return Err(Error::ClientSocketError(
+                            "password message".into(),
+                            client_identifier,
+                        ))
+                    }
+                };
+                let str_password = String::from_utf8(password_response).unwrap();
+                let str_password = str_password.trim_matches(char::from(0));
+                let unsuccessful_auth = !authenticate_ldap(
+                    &pool.settings.user.username.as_str(),
+                    &str_password,
+                    &pool.settings.user.auth_ldapurl.clone().unwrap(),
+                    &pool.settings.user.auth_ldapsuffix.clone().unwrap(),
+                ).await;
+                if unsuccessful_auth {
+                        wrong_password(&mut write, username).await?;
+
+                        return Err(Error::ClientGeneralError(
+                            "Invalid password".into(),
+                            client_identifier,
+                        ));
+                }
 
             }
             let transaction_mode = pool.settings.pool_mode == PoolMode::Transaction;

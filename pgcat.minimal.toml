@@ -12,9 +12,11 @@ admin_auth_ldapurl = "ldap://127.0.0.1:3893"
 admin_auth_ldapsuffix  = "@example.com"
 
 [pools.pgml.users.0]
-username = "postgres"
+username = "jdoe"
 password = "postgres"
-auth_type = "md5"
+auth_type = "ldap"
+auth_ldapurl = "ldap://127.0.0.1:3893"
+auth_ldapsuffix  = "@example.com"
 pool_size = 10
 min_pool_size = 1
 pool_mode = "transaction"
