@@ -4,10 +4,27 @@ FROM rust:bullseye
 COPY --from=sclevine/yj /bin/yj /bin/yj
 RUN /bin/yj -h
 RUN apt-get update -y \
-    && apt-get install -y \
-    llvm-11 psmisc postgresql-contrib postgresql-client \
-    ruby ruby-dev libpq-dev python3 python3-pip lcov curl sudo iproute2 \
-    strace ngrep iproute2 dnsutils lsof net-tools telnet
+	&& apt-get install -y \
+	curl \
+	dnsutils \
+	iproute2 \
+	iproute2 \
+	lcov \
+	libpq-dev \
+	llvm-11 \
+	lsof \
+	net-tools \
+	ngrep \
+	postgresql-client \
+	postgresql-contrib \
+	psmisc \
+	python3 \
+	python3-pip \
+	ruby \
+	ruby-dev \
+	strace \
+	sudo \
+	telnet
 
 # Rust
 RUN cargo install cargo-binutils rustfilt

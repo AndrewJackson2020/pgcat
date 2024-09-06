@@ -1,0 +1,47 @@
+#
+# PgCat config example.
+#
+
+#
+# General pooler settings
+[general]
+
+# What IP to run on, 0.0.0.0 means accessible from everywhere.
+host = "0.0.0.0"
+
+# Port to run on, same as PgBouncer used in this example.
+port = 6432
+
+# Credentials to access the virtual administrative database (pgbouncer or pgcat)
+# Connecting to that database allows running commands like `SHOW POOLS`, `SHOW DATABASES`, etc..
+admin_username = "admin_user"
+admin_password = "admin_pass"
+
+max_clients = 4
+
+[pools.pgml]
+pool_mode = "session"
+default_role = "primary"
+query_parser_enabled = true
+query_parser_read_write_splitting = true
+primary_reads_enabled = true
+sharding_function = "pg_bigint_hash"
+prepared_statements_cache_size = 500
+max_clients = 2
+
+[pools.pgml.users.0]
+username = "limited"
+password = "limited"
+max_clients = 2
+pool_size = 1
+
+[pools.pgml.users.1]
+username = "unlimited"
+password = "unlimited"
+pool_size = 1
+
+[pools.pgml.shards.0]
+servers = [
+    [ "127.0.0.1", 5432, "primary" ],
+]
+database = "some_db"
